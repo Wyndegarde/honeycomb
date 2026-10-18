@@ -1,6 +1,4 @@
 import logging
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from functools import cache
 from typing import Any
 
@@ -93,19 +91,12 @@ def get_engine(
 
 @cache
 def get_session_maker() -> async_sessionmaker[AsyncSession]:
+    "TODO: currently used for alembic, check if can use get_session() instead"
     engine = get_engine()
     return async_sessionmaker(engine, expire_on_commit=False)
 
 
-@asynccontextmanager
-async def async_scoped_session() -> AsyncIterator[AsyncSession]:
-    """
-    Provides async sessions which are not shared across calls.
-
-    New engine is created for each session and disposed, use cautiously.
-    """
-    ephermal_engine = get_engine(pool_size=0)  # No connection pooling
-    async_session_maker = async_sessionmaker(ephermal_engine, expire_on_commit=False)
-    async with async_session_maker() as session:
+async def get_session():
+    engine = get_engine()
+    async with AsyncSession(engine, expire_on_commit=False) as session:
         yield session
-    await ephermal_engine.dispose()
