@@ -12,6 +12,14 @@ uv run fastapi dev
 
 Visit http://localhost:8000
 
+### Run the tests
+
+```bash
+uv run pytest
+```
+
+Requires only a running Docker daemon. The suite starts its own throwaway Postgres container, so `make run-db-container` and `.env` are not needed.
+
 ### Deploy to FastAPI Cloud
 
 Sign up and log in at https://fastapicloud.com, then deploy with:

@@ -1,14 +1,12 @@
 from collections.abc import Sequence
-from typing import Any, TypeVar
+from typing import Any
 
 from sqlalchemy import ScalarResult, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
-T = TypeVar("T", bound=DeclarativeBase)  # ORM Model type
 
-
-class AsyncBaseRepository[T]:
+class AsyncBaseRepository[T: DeclarativeBase]:
     """
     Base class for asynchronous repositories providing common CRUD operations.
     """

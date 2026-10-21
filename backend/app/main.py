@@ -1,45 +1,16 @@
-from typing import Annotated
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends
-from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import ConfigDict
+from fastapi import FastAPI
 
-from app.db.db_engine import get_session
-from app.db.repositories.review import ReviewRepository
-
-app = FastAPI()
-
-SessionDep = Annotated[AsyncSession, Depends(get_session)]
+from app.db.db_engine import dispose_engine
+from app.routes import api_router
 
 
-class NewReview(BaseModel):
-    name: str = Field(max_length=2000)
-    author: str = Field(max_length=2000)
-    rating: int = Field(ge=0, le=5)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    await dispose_engine()
 
 
-class ReviewRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    name: str
-    author: str
-    rating: int
-
-
-@app.get("/")
-async def main():
-    return {"message": "Hello World"}
-
-
-@app.get("/review")
-async def get_all_reviews():
-    return {"reviews": []}
-
-
-@app.post("/review", response_model=ReviewRead)
-async def add_review(new_review: NewReview, session: SessionDep):
-    review_repo = ReviewRepository()
-    review = await review_repo.create(session, **new_review.model_dump())
-    await session.commit()
-    return review
+app = FastAPI(lifespan=lifespan)
+app.include_router(api_router)

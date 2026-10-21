@@ -44,18 +44,6 @@ def get_engine(
         raise RuntimeError(
             "Database configuration is incomplete or missing mandatory fields."
         )
-    """Creates and returns an async SQLAlchemy engine with dynamic connection parameters.
-    Args:
-        pool_size: The size of the connection pool. If set to 0, creates a NullPool (no pooling) engine.
-        max_overflow: The maximum number of connections to allow in connection pool overflow.
-        database: Optional database name to connect to. If not provided, uses the default from settings
-    """
-    settings = get_settings()
-
-    if not is_database_configured():
-        raise RuntimeError(
-            "Database configuration is incomplete or missing mandatory fields."
-        )
 
     engine_kwargs: dict[str, Any] = {}
     engine_kwargs["pool_pre_ping"] = True
@@ -91,12 +79,23 @@ def get_engine(
 
 @cache
 def get_session_maker() -> async_sessionmaker[AsyncSession]:
-    "TODO: currently used for alembic, check if can use get_session() instead"
-    engine = get_engine()
-    return async_sessionmaker(engine, expire_on_commit=False)
+    """Process-wide session factory sharing a single engine/connection pool."""
+    return async_sessionmaker(_get_shared_engine(), expire_on_commit=False)
+
+
+@cache
+def _get_shared_engine() -> AsyncEngine:
+    return get_engine()
 
 
 async def get_session():
-    engine = get_engine()
-    async with AsyncSession(engine, expire_on_commit=False) as session:
+    async with get_session_maker()() as session:
         yield session
+
+
+async def dispose_engine() -> None:
+    """Dispose the shared engine, if one was created. Called on app shutdown."""
+    if _get_shared_engine.cache_info().currsize:
+        await _get_shared_engine().dispose()
+        _get_shared_engine.cache_clear()
+        get_session_maker.cache_clear()
