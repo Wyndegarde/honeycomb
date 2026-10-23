@@ -30,8 +30,21 @@ uv run fastapi deploy
 
 ## Project Structure
 
-- `main.py` - Your FastAPI application
+- `app/main.py` - FastAPI application
+- `app/routes/` - API routers (`media`, `reviews`, `health`)
+- `app/schemas/` - Pydantic request/response models
+- `app/db/models/` - SQLAlchemy models; `app/db/repositories/` - data access
+- `app/db/migrations/` - Alembic migrations (`make run-migration` to apply)
 - `pyproject.toml` - Project dependencies
+
+## API
+
+A review belongs to a media item (book, film, TV show, ...). There is one review per item.
+
+- `/media` - create, list (`?q=`, `?type=`, `?limit=`, `?offset=`), get, update, delete
+- `/media/{id}/review` - `PUT` creates or replaces, plus `GET` and `DELETE`
+
+The old `/reviews` endpoints were removed when reviews were split from media.
 
 ## Learn More
 

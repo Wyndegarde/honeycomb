@@ -1,65 +1,68 @@
 from httpx import AsyncClient
 
-REVIEW = {"name": "Excession", "author": "Iain M. Banks", "rating": 5}
+from tests.test_media import create_media
+
+REVIEW = {"rating": 5, "body": "A masterpiece of ships arguing."}
 
 
-async def test_list_reviews_empty(client: AsyncClient):
-    resp = await client.get("/reviews")
-    assert resp.status_code == 200
-    assert resp.json() == []
-
-
-async def test_create_review(client: AsyncClient):
-    resp = await client.post("/reviews", json=REVIEW)
-    assert resp.status_code == 201
-    body = resp.json()
-    assert isinstance(body["id"], int)
-    assert {k: body[k] for k in REVIEW} == REVIEW
-
-
-async def test_create_review_invalid_rating(client: AsyncClient):
-    for rating in (9, -1):
-        resp = await client.post("/reviews", json={**REVIEW, "rating": rating})
-        assert resp.status_code == 422
-        assert resp.json()["detail"][0]["loc"] == ["body", "rating"]
-    assert (await client.get("/reviews")).json() == []
-
-
-async def test_create_review_missing_field(client: AsyncClient):
-    resp = await client.post("/reviews", json={"name": "x"})
-    assert resp.status_code == 422
-
-
-async def test_create_review_name_too_long(client: AsyncClient):
-    resp = await client.post("/reviews", json={**REVIEW, "name": "x" * 2001})
-    assert resp.status_code == 422
-
-
-async def test_list_reviews_after_create(client: AsyncClient):
-    created = (await client.post("/reviews", json=REVIEW)).json()
-    resp = await client.get("/reviews")
-    assert resp.status_code == 200
-    assert resp.json() == [created]
-
-
-async def test_get_review(client: AsyncClient):
-    created = (await client.post("/reviews", json=REVIEW)).json()
-    resp = await client.get(f"/reviews/{created['id']}")
-    assert resp.status_code == 200
-    assert resp.json() == created
-
-
-async def test_get_review_not_found(client: AsyncClient):
-    resp = await client.get("/reviews/999999")
+async def test_get_review_missing(client: AsyncClient):
+    media = await create_media(client)
+    resp = await client.get(f"/media/{media['id']}/review")
     assert resp.status_code == 404
     assert resp.json() == {"detail": "Review not found"}
 
 
-async def test_get_review_invalid_id(client: AsyncClient):
-    resp = await client.get("/reviews/abc")
-    assert resp.status_code == 422
+async def test_put_review_creates_then_replaces(client: AsyncClient):
+    media = await create_media(client)
+    url = f"/media/{media['id']}/review"
+
+    resp = await client.put(url, json=REVIEW)
+    assert resp.status_code == 200
+    first = resp.json()
+    assert first["media_id"] == media["id"]
+    assert {k: first[k] for k in REVIEW} == REVIEW
+
+    resp = await client.put(url, json={"rating": 3})
+    assert resp.status_code == 200
+    assert resp.json()["id"] == first["id"]
+    assert resp.json()["rating"] == 3
+    assert resp.json()["body"] is None
+
+    assert (await client.get(url)).json() == resp.json()
 
 
-async def test_tests_are_isolated(client: AsyncClient):
-    # Earlier tests created rows; none should have leaked through the rollback.
-    assert (await client.get("/reviews")).json() == []
+async def test_review_appears_on_media(client: AsyncClient):
+    media = await create_media(client)
+    review = (await client.put(f"/media/{media['id']}/review", json=REVIEW)).json()
+    assert (await client.get(f"/media/{media['id']}")).json()["review"] == review
+
+
+async def test_put_review_invalid_rating(client: AsyncClient):
+    media = await create_media(client)
+    for rating in (9, -1):
+        resp = await client.put(f"/media/{media['id']}/review", json={"rating": rating})
+        assert resp.status_code == 422
+        assert resp.json()["detail"][0]["loc"] == ["body", "rating"]
+
+
+async def test_put_review_media_not_found(client: AsyncClient):
+    resp = await client.put("/media/999999/review", json=REVIEW)
+    assert resp.status_code == 404
+    assert resp.json() == {"detail": "Media not found"}
+
+
+async def test_delete_review(client: AsyncClient):
+    media = await create_media(client)
+    url = f"/media/{media['id']}/review"
+    await client.put(url, json=REVIEW)
+    assert (await client.delete(url)).status_code == 204
+    assert (await client.get(url)).status_code == 404
+    assert (await client.delete(url)).status_code == 404
+
+
+async def test_deleting_media_deletes_review(client: AsyncClient):
+    media = await create_media(client)
+    url = f"/media/{media['id']}/review"
+    await client.put(url, json=REVIEW)
+    await client.delete(f"/media/{media['id']}")
+    assert (await client.get(url)).status_code == 404
