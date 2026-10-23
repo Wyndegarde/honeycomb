@@ -58,7 +58,7 @@ async def test_search_and_filter(client: AsyncClient):
     await create_media(client, title="Dune", creator="Frank Herbert")
     await create_media(client, title="Alien", creator="Ridley Scott", media_type="film")
 
-    titles = lambda r: sorted(m["title"] for m in r.json())  # noqa: E731
+    titles = lambda r: sorted(m["title"] for m in r.json())
     assert titles(await client.get("/media", params={"q": "banks"})) == ["Excession"]
     assert titles(await client.get("/media", params={"q": "dun"})) == ["Dune"]
     assert titles(await client.get("/media", params={"type": "film"})) == ["Alien"]
@@ -74,7 +74,7 @@ async def test_search_treats_wildcards_literally(client: AsyncClient):
     await create_media(client, title="a_b")
     await create_media(client, title="axb")
 
-    titles = lambda r: sorted(m["title"] for m in r.json())  # noqa: E731
+    titles = lambda r: sorted(m["title"] for m in r.json())
     assert titles(await client.get("/media", params={"q": "%"})) == ["100% Wolf"]
     assert titles(await client.get("/media", params={"q": "a_b"})) == ["a_b"]
 

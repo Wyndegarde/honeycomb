@@ -1,5 +1,9 @@
 ## Agent skills
 
+### Coding standards
+
+Follow the `backend-standards` skill (`.claude/skills/backend-standards/SKILL.md`) for all backend changes.
+
 ### Issue tracker
 
 Issues are local markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.

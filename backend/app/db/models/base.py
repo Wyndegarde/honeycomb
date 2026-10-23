@@ -23,13 +23,14 @@ class BaseNoDate(_Base):
     __abstract__ = True
 
     @declared_attr.directive
-    def __tablename__(cls) -> str:  # noqa
+    def __tablename__(cls) -> str:
         # Doesn't handle case where consecutive upper case is used. Manual override these cases for now
         return re.sub(r"(?<!^)(?=[A-Z])", "_", cls.__name__).lower()
 
     def __repr__(self) -> str:
         if hasattr(self, "id"):
-            return f"<{self.__class__.__name__} id={self.id}>"  # noqa
+            # `id` is declared on subclasses, not on this abstract base.
+            return f"<{self.__class__.__name__} id={self.id}>"  # pyright: ignore[reportAttributeAccessIssue]
 
         return f"<{self.__class__.__name__} id=NotSet>"
 

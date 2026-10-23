@@ -3,18 +3,16 @@ import logging
 from logging.config import fileConfig
 from typing import Any
 
+from alembic import context
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from alembic import context
-
-from app.db.models import Base
 from app.db.db_engine import get_engine
+from app.db.models import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-# ruff: noqa: F401
 config = context.config
 
 if config.config_file_name is not None:
@@ -86,10 +84,11 @@ def _do_run_migrations(sync_conn: Any) -> None:
         "exclude_archive", "0"
     )
 
+    # Alembic's include_object hook is untyped, so the parameters can't be annotated.
     def include_object(obj, name, type_, reflected, compare_to):  # type: ignore
-        if exclude_archive == "1" and type_ == "table" and name.endswith("__archive"):
-            return False
-        return True
+        return not (
+            exclude_archive == "1" and type_ == "table" and name.endswith("__archive")
+        )
 
     context.configure(
         connection=sync_conn,

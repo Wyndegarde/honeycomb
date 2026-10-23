@@ -24,7 +24,9 @@ class Media(Base):
     title: Mapped[str] = mapped_column(Text, nullable=False)
     creator: Mapped[str] = mapped_column(Text, nullable=False)
     media_type: Mapped[MediaType] = mapped_column(
-        Enum(MediaType, name="media_type", values_callable=lambda e: [m.value for m in e]),
+        Enum(
+            MediaType, name="media_type", values_callable=lambda e: [m.value for m in e]
+        ),
         nullable=False,
         index=True,
     )
