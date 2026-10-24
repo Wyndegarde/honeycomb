@@ -45,12 +45,12 @@ One `docker compose up --build` from the repo root starts the whole app: Postgre
 - `frontend`: existing Dockerfile reused unchanged (SPA build served by nginx, `/api/` proxied to `API_URL`, default `http://backend:8000`). Build context is the frontend folder. Published as `8080:80`. Depends on `backend`.
 - Root `.env` (gitignored) and committed `.env.example` listing the `DB_*` variables.
 - Backend gets a `.dockerignore` excluding virtualenv, caches, `.env`, tests, and docs.
-- The backend container's health route (`/health`) is reachable via `/api/health` through nginx, used for verification.
+- The backend container's health route (mounted at `/`) is reachable via `/api/` through nginx, used for verification.
 
 ## Testing Decisions
 
 - A good test exercises only external behaviour of the running stack, not Dockerfile or compose internals.
-- One seam: the running stack via `docker compose up --build` from the repo root on an empty volume. Verify: `GET :8080/` serves the SPA; `GET :8080/api/health` returns 200; creating a media record through `/api/` and reading it back succeeds (proves migrations ran); a second `up` on the populated volume starts cleanly (idempotent migration).
+- One seam: the running stack via `docker compose up --build` from the repo root on an empty volume. Verify: `GET :8080/` serves the SPA; `GET :8080/api/` returns 200; creating a media record through `/api/` and reading it back succeeds (proves migrations ran); a second `up` on the populated volume starts cleanly (idempotent migration).
 - This is a manual or scripted smoke check; no new unit tests, as no application code changes.
 - Prior art: the existing backend pytest suite with testcontainers is unchanged and remains the test for application behaviour.
 
