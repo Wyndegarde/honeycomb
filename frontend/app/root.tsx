@@ -1,7 +1,18 @@
 import {
+  AppBar,
+  Box,
+  Button,
+  CssBaseline,
+  ThemeProvider,
+  Toolbar,
+  Typography,
+  createTheme,
+} from "@mui/material";
+import {
   isRouteErrorResponse,
   Links,
   Meta,
+  NavLink,
   Outlet,
   Scripts,
   ScrollRestoration,
@@ -10,16 +21,14 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 
+const theme = createTheme({ colorSchemes: { dark: true } });
+
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
-  },
+  { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
   {
     rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+    href: "https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap",
   },
 ];
 
@@ -29,11 +38,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Honeycomb</title>
         <Meta />
         <Links />
       </head>
       <body>
-        {children}
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          {children}
+        </ThemeProvider>
         <ScrollRestoration />
         <Scripts />
       </body>
@@ -41,35 +54,48 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+export function HydrateFallback() {
+  return null;
+}
+
 export default function App() {
-  return <Outlet />;
+  return (
+    <>
+      <AppBar position="static" color="default" enableColorOnDark>
+        <Toolbar>
+          <Typography variant="h6" sx={{ mr: 3 }}>
+            Honeycomb
+          </Typography>
+          <Button component={NavLink} to="/" end color="inherit">
+            Graph
+          </Button>
+          <Button component={NavLink} to="/library" color="inherit">
+            Library
+          </Button>
+        </Toolbar>
+      </AppBar>
+      <Box component="main">
+        <Outlet />
+      </Box>
+    </>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
-  let details = "An unexpected error occurred.";
-  let stack: string | undefined;
-
-  if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
-    details =
-      error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details;
-  } else if (import.meta.env.DEV && error && error instanceof Error) {
-    details = error.message;
-    stack = error.stack;
-  }
-
+  const message = isRouteErrorResponse(error)
+    ? error.status === 404
+      ? "Page not found"
+      : error.statusText
+    : error instanceof Error
+      ? error.message
+      : "An unexpected error occurred.";
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
-      {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
-      )}
-    </main>
+    <Box sx={{ p: 4 }}>
+      <Typography variant="h5">Something went wrong</Typography>
+      <Typography color="text.secondary">{message}</Typography>
+      <Button component={NavLink} to="/" sx={{ mt: 2 }}>
+        Back to graph
+      </Button>
+    </Box>
   );
 }

@@ -1,10 +1,18 @@
 import { reactRouter } from "@react-router/dev/vite";
-import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [tailwindcss(), reactRouter()],
+  plugins: [reactRouter()],
   resolve: {
     tsconfigPaths: true,
+  },
+  server: {
+    proxy: {
+      // The API has no /api prefix, so strip it
+      "/api": {
+        target: process.env.API_URL ?? "http://localhost:8000",
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
   },
 });
