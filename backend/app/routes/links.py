@@ -3,9 +3,10 @@ from sqlalchemy.exc import IntegrityError
 
 from app.db.models import MediaLink
 from app.routes.deps import (
+    LinkDep,
     LinkRepoDep,
+    MediaDep,
     MediaRepoDep,
-    get_link_or_404,
     get_media_or_404,
 )
 from app.schemas.link import LinkRead, NewLink, UpdateLink
@@ -25,15 +26,13 @@ def to_read(link: MediaLink, media_id: int) -> LinkRead:
 
 @router.get("", response_model=list[LinkRead])
 async def list_links(
-    media_id: int,
+    media: MediaDep,
     repo: LinkRepoDep,
-    media_repo: MediaRepoDep,
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
-    await get_media_or_404(media_repo, media_id)
-    links = await repo.list_for(media_id, limit, offset)
-    return [to_read(link, media_id) for link in links]
+    links = await repo.list_for(media.id, limit, offset)
+    return [to_read(link, media.id) for link in links]
 
 
 @router.post("", response_model=LinkRead, status_code=status.HTTP_201_CREATED)
@@ -63,9 +62,8 @@ async def add_link(
 
 @router.patch("/{other_id}", response_model=LinkRead)
 async def update_link(
-    media_id: int, other_id: int, changes: UpdateLink, repo: LinkRepoDep
+    media_id: int, link: LinkDep, changes: UpdateLink, repo: LinkRepoDep
 ):
-    link = await get_link_or_404(repo, media_id, other_id)
     fields = changes.model_dump(exclude_unset=True)
     link = await repo.update_link(
         link, fields.get("themes"), fields.get("note"), "note" in fields
@@ -75,7 +73,6 @@ async def update_link(
 
 
 @router.delete("/{other_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_link(media_id: int, other_id: int, repo: LinkRepoDep):
-    link = await get_link_or_404(repo, media_id, other_id)
+async def delete_link(link: LinkDep, repo: LinkRepoDep):
     await repo.delete(link.id)
     await repo.db.commit()

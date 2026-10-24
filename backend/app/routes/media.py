@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
 
 from app.db.models import MediaType
-from app.routes.deps import LinkRepoDep, MediaRepoDep, get_media_or_404
+from app.routes.deps import LinkRepoDep, MediaDep, MediaRepoDep, get_media_or_404
 from app.schemas.media import MediaRead, NewMedia, UpdateMedia
 
 router = APIRouter(prefix="/media", tags=["media"])
@@ -20,8 +20,8 @@ async def list_media(
 
 
 @router.get("/{media_id}", response_model=MediaRead)
-async def get_media(media_id: int, repo: MediaRepoDep):
-    return await get_media_or_404(repo, media_id)
+async def get_media(media: MediaDep):
+    return media
 
 
 @router.post("", response_model=MediaRead, status_code=status.HTTP_201_CREATED)
@@ -40,8 +40,7 @@ async def add_media(new_media: NewMedia, repo: MediaRepoDep, link_repo: LinkRepo
 
 
 @router.patch("/{media_id}", response_model=MediaRead)
-async def update_media(media_id: int, changes: UpdateMedia, repo: MediaRepoDep):
-    media = await get_media_or_404(repo, media_id)
+async def update_media(media: MediaDep, changes: UpdateMedia, repo: MediaRepoDep):
     media = await repo.update(media, **changes.model_dump(exclude_unset=True))
     await repo.db.commit()
     return media
