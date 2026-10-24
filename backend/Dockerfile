@@ -13,5 +13,5 @@ RUN useradd --system app
 USER app
 
 EXPOSE 8000
-# upgrade head is a no-op when the schema is current
-CMD ["sh", "-c", "alembic -c app/db/alembic.ini upgrade head && fastapi run app/main.py --port 8000"]
+
+CMD [ "uv run fastapi dev app/main.py --port 8000"]
