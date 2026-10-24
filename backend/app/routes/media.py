@@ -1,17 +1,11 @@
 from fastapi import APIRouter, HTTPException, Query, status
+from sqlalchemy.exc import IntegrityError
 
-from app.db.models import Media, MediaType
-from app.routes.deps import MediaRepoDep
+from app.db.models import MediaType
+from app.routes.deps import LinkRepoDep, MediaRepoDep, get_media_or_404
 from app.schemas.media import MediaRead, NewMedia, UpdateMedia
 
 router = APIRouter(prefix="/media", tags=["media"])
-
-
-async def get_media_or_404(repo: MediaRepoDep, media_id: int) -> Media:
-    media = await repo.get(media_id)
-    if media is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Media not found")
-    return media
 
 
 @router.get("", response_model=list[MediaRead])
@@ -31,8 +25,16 @@ async def get_media(media_id: int, repo: MediaRepoDep):
 
 
 @router.post("", response_model=MediaRead, status_code=status.HTTP_201_CREATED)
-async def add_media(new_media: NewMedia, repo: MediaRepoDep):
-    media = await repo.create(**new_media.model_dump())
+async def add_media(new_media: NewMedia, repo: MediaRepoDep, link_repo: LinkRepoDep):
+    for link in new_media.links:
+        await get_media_or_404(repo, link.media_id)
+    media = await repo.create(**new_media.model_dump(exclude={"links"}))
+    try:
+        for link in new_media.links:
+            await link_repo.add_link(media.id, link.media_id, link.themes, link.note)
+    except IntegrityError:
+        # A target was deleted after the check above; nothing is committed
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Media not found") from None
     await repo.db.commit()
     return media
 

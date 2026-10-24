@@ -43,6 +43,8 @@ A review belongs to a media item (book, film, TV show, ...). There is one review
 
 - `/media` - create, list (`?q=`, `?type=`, `?limit=`, `?offset=`), get, update, delete
 - `/media/{id}/review` - `PUT` creates or replaces, plus `GET` and `DELETE`
+- `/media/{id}/links` - `GET` (`?limit=`, `?offset=`) and `POST` `{media_id, themes, note?}`; `PATCH`/`DELETE` at `/media/{id}/links/{other_id}`. A Link is undirected, needs at least one theme, and `POST` returns `409` if the pair is already linked. Themes are created on the fly (case-insensitive).
+- `POST /media` also accepts `links: [{media_id, themes, note?}]` to link the new media to existing ones; all-or-nothing.
 
 The old `/reviews` endpoints were removed when reviews were split from media.
 

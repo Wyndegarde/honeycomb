@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.db.models import MediaType
+from app.schemas.link import NewLink
 from app.schemas.review import ReviewRead
 
 
@@ -10,6 +11,15 @@ class NewMedia(BaseModel):
     media_type: MediaType
     year: int | None = Field(default=None, ge=0, le=3000)
     description: str | None = Field(default=None, max_length=50000)
+    links: list[NewLink] = Field(default_factory=list, max_length=100)
+
+    @field_validator("links")
+    @classmethod
+    def unique_targets(cls, value):
+        ids = [link.media_id for link in value]
+        if len(ids) != len(set(ids)):
+            raise ValueError("each Media can be linked only once")
+        return value
 
 
 class UpdateMedia(BaseModel):

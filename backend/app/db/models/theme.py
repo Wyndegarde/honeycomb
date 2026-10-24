@@ -6,7 +6,7 @@ from .base import Base, BaseNoDate
 
 class Theme(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    # Stored lower-cased and stripped by ThemeRepository so uniqueness is case-insensitive
+    # Stored lower-cased and stripped by the schema so uniqueness is case-insensitive
     name: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 

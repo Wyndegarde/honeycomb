@@ -1,7 +1,9 @@
 from sqlalchemy import CheckConstraint, ForeignKey, Integer, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, BaseNoDate
+from .media import Media
+from .theme import Theme
 
 
 class MediaLink(Base):
@@ -20,6 +22,12 @@ class MediaLink(Base):
         ForeignKey("media.id", ondelete="CASCADE"), nullable=False, index=True
     )
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    source: Mapped[Media] = relationship(foreign_keys=[source_id], lazy="selectin")
+    target: Mapped[Media] = relationship(foreign_keys=[target_id], lazy="selectin")
+    themes: Mapped[list[Theme]] = relationship(
+        secondary="media_link_theme", lazy="selectin", order_by=Theme.name
+    )
 
 
 class MediaLinkTheme(BaseNoDate):
