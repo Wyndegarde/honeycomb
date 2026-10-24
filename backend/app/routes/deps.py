@@ -14,7 +14,9 @@ from app.db.repositories.review import ReviewRepository
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
-def repo_factory[R: AsyncBaseRepository](repo_cls: Callable[[AsyncSession], R]):
+def repo_factory[R: AsyncBaseRepository](
+    repo_cls: Callable[[AsyncSession], R],
+) -> Callable[[AsyncSession], R]:
     def factory(db: SessionDep) -> R:
         return repo_cls(db)
 
